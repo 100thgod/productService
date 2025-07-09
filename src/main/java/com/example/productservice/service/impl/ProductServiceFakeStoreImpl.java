@@ -1,39 +1,62 @@
 package com.example.productservice.service.impl;
 
-import com.example.productservice.dto.ProductDto;
+import com.example.productservice.client.FakeStoreClient;
+import com.example.productservice.convertor.FakeStoreProductDtoConverter;
 import com.example.productservice.models.Product;
 import com.example.productservice.service.ProductService;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ProductServiceFakeStoreImpl implements ProductService {
-    RestTemplate restTemplate = new RestTemplate();
-    @Override
-    public List<ProductDto> getAllProducts() {
-        ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
-            "https://fakestoreapi.com/products",
-            HttpMethod.GET,
-            null,
-            new ParameterizedTypeReference<List<ProductDto>>() {}
-        );
-        return response.getBody();
+
+    FakeStoreClient fakeStoreClient;
+
+    public ProductServiceFakeStoreImpl(FakeStoreClient fakeStoreClient) {
+        this.fakeStoreClient = fakeStoreClient;
     }
 
     @Override
-    public ProductDto getProduct(Long id) {
-        return restTemplate.getForEntity("https://fakestoreapi.com/products/" + id, ProductDto.class).getBody();
+    public List<Product> getAllProducts() {
+        List<Product> products = new ArrayList<>();
+        fakeStoreClient.getAllProducts().forEach(fakeStoreProductResponseDto -> products.add(FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(fakeStoreProductResponseDto)));
+        return products;
     }
 
     @Override
-    public ProductDto createProduct(ProductDto productDto) {
-        ResponseEntity<ProductDto> response = restTemplate.postForEntity("https://fakestoreapi.com/products", productDto, ProductDto.class);
-        return response.getBody();
+    public Product getProduct(Long id) {
+        return FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(fakeStoreClient.getProduct(id));
     }
+
+
+    public Product createProduct(Product product) {
+        return FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(
+                fakeStoreClient.createProduct(
+                        FakeStoreProductDtoConverter.convertProductToFakeStoreProductRequestDto(product)
+                ));
+    }
+
+    @Override
+    public Product deleteProduct(Long id) {
+        return FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(fakeStoreClient.deleteProduct(id));
+    }
+
+    @Override
+    public Product replaceProduct(Product product, Long id) {
+        return FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(
+                fakeStoreClient.replaceProduct(
+                        FakeStoreProductDtoConverter.convertProductToFakeStoreProductRequestDto(product), id));
+    }
+
+    @Override
+    public Product updateProduct(Product product, Long id) {
+        return FakeStoreProductDtoConverter.convertFakeStoreProductResponseDtoToProduct(
+                fakeStoreClient.updateProduct(
+                        FakeStoreProductDtoConverter.convertProductToFakeStoreProductRequestDto(product), id));
+    }
+
+
 }
